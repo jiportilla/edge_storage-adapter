@@ -1,3 +1,37 @@
+# Edge Remote Storage Adapter
+![Remote Storage Adapter Design](docs/RemoteAdapter.png)
+
+This is a write adapter that receives samples via Prometheus's remote write protocol and stores them in InfluxDB, (or Graphite, OpenTSDB). It is meant as a replacement for the built-in specific remote storage implementations that have been removed from Prometheus.
+
+For InfluxDB, this binary is also a read adapter that supports reading back data through Prometheus via Prometheus's remote read protocol.
+
+Run `remote_storage_adapter -h` for additional details:
+
+```
+./remote_storage_adapter -h
+usage: remote_storage_adapter [<flags>]
+
+Remote storage adapter
+
+Flags:
+  -h, --help                  Show context-sensitive help (also try --help-long and --help-man).
+      ...
+      --influxdb-url=""       The URL of the remote InfluxDB server to send samples to. None, if empty.
+      --influxdb.retention-policy="autogen"
+                              The InfluxDB retention policy to use.
+      --influxdb.username=""  The username to use when sending samples to InfluxDB. The corresponding password must be provided via the INFLUXDB_PW environment variable.
+      --influxdb.database="prometheus"
+                              The name of the database to use for storing samples in InfluxDB.
+      --send-timeout=30s      The timeout to use when sending samples to the remote storage.
+      --web.listen-address=":9201"
+                              Address to listen on for web endpoints.
+      --web.telemetry-path="/metrics"
+                              Address to listen on for web endpoints.
+      --log.level=info        Only log messages with the given severity or above. One of: [debug, info, warn, error]
+      --log.format=logfmt     Output format of log messages. One of: [logfmt, json]
+```
+
+
 # Prometheus Internal architecture
 
 The Prometheus server consists of many internal components that work together in concert to achieve Prometheus's overall functionality. This document provides an overview of the major components, including how they fit together and pointers to implementation details. If you are a developer who is new to Prometheus and wants to get an overview of all its pieces, start here.
@@ -17,11 +51,6 @@ See
 
 Prometheus stores time series samples in a local time series database (TSDB) and optionally also forwards a copy of all samples to a set of configurable remote endpoints. Similarly, Prometheus reads data from the local TSDB and optionally also from remote endpoints. Both local and remote storage subsystems are explained below.
 
-### Fanout storage
-
-The [fanout storage](https://github.com/prometheus/prometheus/blob/v2.3.1/storage/fanout.go#L27-L32) is a [`storage.Storage`](https://github.com/prometheus/prometheus/blob/v2.3.1/storage/interface.go#L31-L44) implementation that proxies and abstracts away the details of the underlying local and remote storage subsystems for use by other components. For reads, it merges query results from local and remote sources, while writes are duplicated to all local and remote destinations. Internally, the fanout storage differentiates between a primary (local) storage and optional secondary (remote) storages, as they have different capabilities for optimized series ingestion.
-
-Currently rules still read and write directly from/to the fanout storage, but this will be changed soon so that rules will only read local data by default. This is to increase the reliability of alerting and recording rules, which should only need short-term data in most cases.
 
 ### Local storage
 
