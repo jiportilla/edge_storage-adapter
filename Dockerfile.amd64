@@ -1,0 +1,15 @@
+ARG ARCH="amd64"
+ARG OS="linux"
+FROM quay.io/prometheus/busybox-${OS}-${ARCH}:glibc
+LABEL maintainer="The Prometheus Authors <prometheus-developers@googlegroups.com>"
+
+#COPY .build/${OS}-${ARCH}/json_exporter /bin/json_exporter
+
+COPY ./remote_storage_adapter /bin/remote_storage_adapter
+
+EXPOSE      9201
+USER        nobody
+ENTRYPOINT  [ "/bin/remote_storage_adapter" ]
+CMD ["/bin/remote_storage_adapter", "--influxdb-url=http://52.116.2.27:8086/", "--influxdb.database=prometheus", "--influxdb.retention-policy=autogen"]
+
+#./remote_storage_adapter --influxdb-url=http://52.116.2.27:8086/ --influxdb.database=prometheus --influxdb.retention-policy=autogen
